@@ -20,7 +20,7 @@ App = React.createClass({
       // If hide completed is checked, filter tasks
       query = {checked: {$ne: true}};
     }
-
+    Meteor.subscribe("users");
     return {
       tasks: Tasks.find(query, {sort: {createdAt: -1}}).fetch(),
       incompleteCount: Tasks.find({checked: {$ne: true}}).count(),
@@ -67,6 +67,11 @@ App = React.createClass({
         localization: 'en-US',
       });
       console.log("change completed");
+      Meteor.call("updateUserInfo", Meteor.userId(), 'en-US', function(error){
+        if(error){
+          console.log("error", error);
+        }
+      });
     } else {
       _i18n.setLocale('vi-VN');
       setDataToLocalStorage('localization', 'vi-VN');
@@ -74,12 +79,43 @@ App = React.createClass({
         localization: 'vi-VN',
       });
       console.log("change completed");
-
+      Meteor.call("updateUserInfo", Meteor.userId(), 'vi-VN', function(error){
+        if(error){
+          console.log("error", error);
+        }
+      });
     }
+  },
+  onLogin() {
+    const username = React.findDOMNode(this.refs.username).value.trim();
+    const password = React.findDOMNode(this.refs.password).value.trim();
+    Meteor.loginWithPassword(username, password, function errLogin(err) {
+      if (err) { // Login failed
+        console.log("errLogin");
+      } else { // Login success
+        console.log(Meteor.userId());
+          _i18n.setLocale(Meteor.user().language);
+          setDataToLocalStorage('localization', Meteor.user().language);
+      }
+    });
   },
   render() {
     return (
       <div className="container">
+        { !this.data.currentUser ?
+        <div>
+            <input
+              ref="username"
+              type="text" />
+            <input
+              ref="password"
+              type="password" />
+            <button onClick={this.onLogin}>Login</button>
+            <AccountsUIWrapper />
+        </div>
+
+        :
+        <div>
         <header>
           <h1><T>todoList</T>({this.data.incompleteCount})</h1>
           <button onClick={this.onClickChangeLanguage}><T>changeLanguage</T></button>
@@ -91,22 +127,19 @@ App = React.createClass({
               onClick={this.toggleHideCompleted} />
             <T>hideComplete</T>
           </label>
-
-          <AccountsUIWrapper />
-
-          { this.data.currentUser ?
             <form className="new-task" onSubmit={this.handleSubmit} >
               <input
                 type="text"
                 ref="textInput"
                 placeholder="Type to add new tasks" />
-            </form> : ''
-          }
+            </form>
         </header>
 
         <ul>
           {this.renderTasks()}
         </ul>
+        </div>
+      }
       </div>
     );
   }

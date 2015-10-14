@@ -63,5 +63,14 @@ Meteor.methods({
     //throw new Meteor.Error("not-authorized");
 
 
-  }
+  },
+  updateUserInfo(id,language) {
+    Meteor.users.update({
+      _id: id,
+    }, {
+      $set: {
+        language: language,
+      },
+    });
+  },
 });
